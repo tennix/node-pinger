@@ -15,6 +15,7 @@ type Registry struct {
 	localNode   string
 	prom        *prometheus.Registry
 	rtt         *prometheus.GaugeVec
+	rttHist     *prometheus.HistogramVec
 	probesTotal *prometheus.CounterVec
 	lastSuccess *prometheus.GaugeVec
 	mu          sync.Mutex
@@ -30,6 +31,11 @@ func New(localNode string) *Registry {
 			Name: "node_icmp_rtt_ms",
 			Help: "Latest successful node-to-node ICMP RTT in milliseconds.",
 		}, []string{"src_node", "dst_node", "src_zone", "dst_zone"}),
+		rttHist: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Name:    "node_icmp_rtt_seconds",
+			Help:    "Observed node-to-node ICMP RTT in seconds.",
+			Buckets: []float64{0.00025, 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5},
+		}, []string{"src_node", "dst_node", "src_zone", "dst_zone"}),
 		probesTotal: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "node_icmp_probes_total",
 			Help: "Total ICMP probes by result.",
@@ -40,7 +46,7 @@ func New(localNode string) *Registry {
 		}, []string{"src_node", "dst_node"}),
 		tracked: make(map[string]string),
 	}
-	r.prom.MustRegister(r.rtt, r.probesTotal, r.lastSuccess)
+	r.prom.MustRegister(r.rtt, r.rttHist, r.probesTotal, r.lastSuccess)
 	return r
 }
 
@@ -51,6 +57,7 @@ func (r *Registry) Handler() http.Handler {
 func (r *Registry) RecordSuccess(srcZone string, peer model.Node, rtt time.Duration, now time.Time) {
 	r.trackPeer(srcZone, peer)
 	r.rtt.WithLabelValues(r.localNode, peer.Name, srcZone, peer.Zone).Set(float64(rtt) / float64(time.Millisecond))
+	r.rttHist.WithLabelValues(r.localNode, peer.Name, srcZone, peer.Zone).Observe(rtt.Seconds())
 	r.probesTotal.WithLabelValues(r.localNode, peer.Name, "success").Inc()
 	r.lastSuccess.WithLabelValues(r.localNode, peer.Name).Set(float64(now.Unix()))
 }
@@ -107,6 +114,7 @@ func (r *Registry) trackPeer(srcZone string, peer model.Node) {
 
 func (r *Registry) deleteLocked(peerName, dstZone, srcZone string) {
 	r.rtt.DeleteLabelValues(r.localNode, peerName, srcZone, dstZone)
+	r.rttHist.DeleteLabelValues(r.localNode, peerName, srcZone, dstZone)
 	r.lastSuccess.DeleteLabelValues(r.localNode, peerName)
 	r.probesTotal.DeleteLabelValues(r.localNode, peerName, "success")
 	r.probesTotal.DeleteLabelValues(r.localNode, peerName, "timeout")
