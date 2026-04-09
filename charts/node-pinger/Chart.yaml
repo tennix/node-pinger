@@ -1,0 +1,6 @@
+apiVersion: v2
+name: node-pinger
+description: Helm chart for deploying the node-pinger DaemonSet agent
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "node-pinger.fullname" . }}
+  labels:
+    {{- include "node-pinger.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "node-pinger.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "node-pinger.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "node-pinger.serviceAccountName" . }}
+      hostNetwork: {{ .Values.hostNetwork }}
+      dnsPolicy: {{ .Values.dnsPolicy }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: node-pinger
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: METRICS_ADDR
+              value: {{ printf ":%v" .Values.metrics.port | quote }}
+            - name: PROBE_INTERVAL
+              value: {{ .Values.config.probeInterval | quote }}
+            - name: PROBE_TIMEOUT
+              value: {{ .Values.config.probeTimeout | quote }}
+            - name: PROBE_JITTER_FACTOR
+              value: {{ .Values.config.probeJitterFactor | quote }}
+            - name: EXCLUDE_NOT_READY
+              value: {{ .Values.config.excludeNotReady | quote }}
+            - name: EXCLUDE_CONTROL_PLANE
+              value: {{ .Values.config.excludeControlPlane | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+              protocol: TCP
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

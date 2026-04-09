@@ -1,0 +1,57 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: ghcr.io/tennix/node-pinger
+  tag: latest
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: ""
+
+rbac:
+  create: true
+
+podLabels: {}
+
+hostNetwork: true
+dnsPolicy: ClusterFirstWithHostNet
+
+metrics:
+  port: 9090
+
+config:
+  probeInterval: 10s
+  probeTimeout: 500ms
+  probeJitterFactor: "0.2"
+  excludeNotReady: "false"
+  excludeControlPlane: "false"
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    add:
+      - NET_RAW
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 128Mi
+
+service:
+  enabled: true
+  headless: true
+  type: ClusterIP
+  annotations: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+podAnnotations: {}
+
+extraEnv: []
