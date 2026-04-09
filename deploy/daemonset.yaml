@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-pinger
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: node-pinger
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: node-pinger
+    spec:
+      serviceAccountName: node-pinger
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: node-pinger
+          image: ghcr.io/tennix/node-pinger:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: METRICS_ADDR
+              value: ":9090"
+            - name: PROBE_INTERVAL
+              value: "10s"
+            - name: PROBE_TIMEOUT
+              value: "500ms"
+            - name: PROBE_JITTER_FACTOR
+              value: "0.2"
+            - name: EXCLUDE_NOT_READY
+              value: "false"
+            - name: EXCLUDE_CONTROL_PLANE
+              value: "false"
+          ports:
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add: ["NET_RAW"]
+            readOnlyRootFilesystem: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
