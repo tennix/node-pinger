@@ -9,5 +9,5 @@ spec:
     app.kubernetes.io/name: node-pinger
   ports:
     - name: metrics
-      port: 9090
+      port: 9095
       targetPort: metrics

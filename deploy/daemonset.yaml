@@ -25,7 +25,7 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
             - name: METRICS_ADDR
-              value: ":9090"
+              value: ":9095"
             - name: PROBE_INTERVAL
               value: "10s"
             - name: PROBE_TIMEOUT
@@ -38,7 +38,7 @@ spec:
               value: "false"
           ports:
             - name: metrics
-              containerPort: 9090
+              containerPort: 9095
               protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
