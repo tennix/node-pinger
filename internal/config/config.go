@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	defaultMetricsAddr   = ":9090"
+	defaultMetricsAddr   = ":9095"
 	defaultProbeInterval = 10 * time.Second
 	defaultProbeTimeout  = 500 * time.Millisecond
 	defaultJitterFactor  = 0.2
