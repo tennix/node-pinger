@@ -16,6 +16,6 @@ FROM gcr.io/distroless/static-debian12
 
 COPY --from=builder /out/node-pinger /node-pinger
 
-EXPOSE 9090
+EXPOSE 9095
 
 ENTRYPOINT ["/node-pinger"]

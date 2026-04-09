@@ -18,7 +18,7 @@ All configuration is provided by environment variables.
 | --- | --- | --- |
 | `NODE_NAME` | required | Local node name, usually injected from `spec.nodeName` |
 | `KUBECONFIG` | `$HOME/.kube/config` | Optional kubeconfig for local development when not running in cluster |
-| `METRICS_ADDR` | `:9090` | Address for the HTTP metrics server |
+| `METRICS_ADDR` | `:9095` | Address for the HTTP metrics server |
 | `PROBE_INTERVAL` | `10s` | Interval between full peer probe rounds |
 | `PROBE_TIMEOUT` | `500ms` | Timeout for a single ICMP probe |
 | `PROBE_JITTER_FACTOR` | `0.2` | Random delay factor applied per peer within each round |

@@ -19,7 +19,7 @@ hostNetwork: true
 dnsPolicy: ClusterFirstWithHostNet
 
 metrics:
-  port: 9090
+  port: 9095
 
 config:
   probeInterval: 10s
