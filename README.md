@@ -10,6 +10,7 @@ The project is designed to provide a cleaner infrastructure-level latency signal
 - `node_icmp_rtt_seconds{src_node,dst_node,src_zone,dst_zone}`: histogram of observed successful RTT samples for percentile analysis over longer windows
 - `node_icmp_probes_total{src_node,dst_node,result}`: total probes grouped by `success`, `timeout`, or `error`
 - `node_icmp_last_success_unixtime{src_node,dst_node}`: Unix timestamp of the latest successful probe
+- `node_icmp_last_failure_unixtime{src_node,dst_node,result}`: Unix timestamp of the latest failed probe, split by `timeout` vs `error`
 
 ## Configuration
 

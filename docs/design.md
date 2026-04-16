@@ -71,6 +71,7 @@ Recommended core metrics:
 - `node_icmp_rtt_ms`
 - `node_icmp_probes_total`
 - `node_icmp_last_success_unixtime`
+- `node_icmp_last_failure_unixtime`
 
 ## Topology model
 
