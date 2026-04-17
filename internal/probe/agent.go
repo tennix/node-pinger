@@ -85,10 +85,10 @@ func (a *Agent) runRound(ctx context.Context) error {
 			case err == nil:
 				a.metrics.RecordSuccess(localNode.Zone, peer, rtt, now)
 			case errors.Is(err, ErrTimeout):
-				a.metrics.RecordTimeout(peer)
+				a.metrics.RecordTimeout(peer, now)
 			default:
 				log.Printf("probe to %s (%s) failed: %v", peer.Name, peer.InternalIP, err)
-				a.metrics.RecordError(peer)
+				a.metrics.RecordError(peer, now)
 			}
 		}()
 	}

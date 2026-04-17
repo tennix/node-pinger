@@ -63,12 +63,48 @@ func TestRecordSuccessExportsGaugeHistogramAndTimestamp(t *testing.T) {
 	}
 }
 
+func TestRecordFailureExportsLastFailureTimestamp(t *testing.T) {
+	t.Parallel()
+
+	r := New("node-a")
+	peer := model.Node{Name: "node-b", Zone: "zone-b"}
+	now := time.Unix(1700000010, 0)
+
+	r.RecordError(peer, now)
+
+	families, err := r.prom.Gather()
+	if err != nil {
+		t.Fatalf("gather metrics: %v", err)
+	}
+
+	for _, family := range families {
+		if family.GetName() != "node_icmp_last_failure_unixtime" {
+			continue
+		}
+		if len(family.Metric) != 1 {
+			t.Fatalf("expected one last-failure metric, got %d", len(family.Metric))
+		}
+		labels := family.Metric[0].GetLabel()
+		if len(labels) != 3 {
+			t.Fatalf("expected last-failure metric to use 3 labels, got %d", len(labels))
+		}
+		if got := family.Metric[0].GetGauge().GetValue(); got != float64(now.Unix()) {
+			t.Fatalf("expected last-failure timestamp %d, got %v", now.Unix(), got)
+		}
+		return
+	}
+
+	t.Fatal("expected node_icmp_last_failure_unixtime metric family")
+}
+
 func TestReconcileDeletesHistogramForRemovedPeer(t *testing.T) {
 	t.Parallel()
 
 	r := New("node-a")
 	peer := model.Node{Name: "node-b", Zone: "zone-b"}
-	r.RecordSuccess("zone-a", peer, 4*time.Millisecond, time.Now())
+	now := time.Now()
+	r.RecordSuccess("zone-a", peer, 4*time.Millisecond, now)
+	r.RecordTimeout(peer, now)
 	r.Reconcile("zone-a", nil)
 
 	families, err := r.prom.Gather()
@@ -77,11 +113,11 @@ func TestReconcileDeletesHistogramForRemovedPeer(t *testing.T) {
 	}
 
 	for _, family := range families {
-		if family.GetName() != "node_icmp_rtt_seconds" {
-			continue
-		}
-		if len(family.Metric) != 0 {
-			t.Fatalf("expected histogram metrics to be deleted, got %d", len(family.Metric))
+		switch family.GetName() {
+		case "node_icmp_rtt_seconds", "node_icmp_last_failure_unixtime":
+			if len(family.Metric) != 0 {
+				t.Fatalf("expected %s metrics to be deleted, got %d", family.GetName(), len(family.Metric))
+			}
 		}
 	}
 }

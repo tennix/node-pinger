@@ -18,6 +18,7 @@ type Registry struct {
 	rttHist     *prometheus.HistogramVec
 	probesTotal *prometheus.CounterVec
 	lastSuccess *prometheus.GaugeVec
+	lastFailure *prometheus.GaugeVec
 	mu          sync.Mutex
 	tracked     map[string]string
 	srcZone     string
@@ -44,9 +45,13 @@ func New(localNode string) *Registry {
 			Name: "node_icmp_last_success_unixtime",
 			Help: "Unix timestamp of the most recent successful probe.",
 		}, []string{"src_node", "dst_node"}),
+		lastFailure: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "node_icmp_last_failure_unixtime",
+			Help: "Unix timestamp of the most recent failed probe by result.",
+		}, []string{"src_node", "dst_node", "result"}),
 		tracked: make(map[string]string),
 	}
-	r.prom.MustRegister(r.rtt, r.rttHist, r.probesTotal, r.lastSuccess)
+	r.prom.MustRegister(r.rtt, r.rttHist, r.probesTotal, r.lastSuccess, r.lastFailure)
 	return r
 }
 
@@ -62,14 +67,16 @@ func (r *Registry) RecordSuccess(srcZone string, peer model.Node, rtt time.Durat
 	r.lastSuccess.WithLabelValues(r.localNode, peer.Name).Set(float64(now.Unix()))
 }
 
-func (r *Registry) RecordTimeout(peer model.Node) {
+func (r *Registry) RecordTimeout(peer model.Node, now time.Time) {
 	r.trackPeer("", peer)
 	r.probesTotal.WithLabelValues(r.localNode, peer.Name, "timeout").Inc()
+	r.lastFailure.WithLabelValues(r.localNode, peer.Name, "timeout").Set(float64(now.Unix()))
 }
 
-func (r *Registry) RecordError(peer model.Node) {
+func (r *Registry) RecordError(peer model.Node, now time.Time) {
 	r.trackPeer("", peer)
 	r.probesTotal.WithLabelValues(r.localNode, peer.Name, "error").Inc()
+	r.lastFailure.WithLabelValues(r.localNode, peer.Name, "error").Set(float64(now.Unix()))
 }
 
 func (r *Registry) Reconcile(srcZone string, peers []model.Node) {
@@ -119,4 +126,6 @@ func (r *Registry) deleteLocked(peerName, dstZone, srcZone string) {
 	r.probesTotal.DeleteLabelValues(r.localNode, peerName, "success")
 	r.probesTotal.DeleteLabelValues(r.localNode, peerName, "timeout")
 	r.probesTotal.DeleteLabelValues(r.localNode, peerName, "error")
+	r.lastFailure.DeleteLabelValues(r.localNode, peerName, "timeout")
+	r.lastFailure.DeleteLabelValues(r.localNode, peerName, "error")
 }
